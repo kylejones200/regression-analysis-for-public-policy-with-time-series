@@ -1,0 +1,22 @@
+data:
+  input_file: /Users/kylejonespatricia/time_series/data/_harness_adapted/PanelRegression_Python_us_monthly.csv
+  entity_column: API_WELLNO
+  date_column: ReportDate
+  dependent_variable: Oil
+model:
+  independent_vars:
+  - Days
+  entity_effects: false
+  time_effects: false
+  driscoll_kraay: false
+  clustered: false
+  robust: true
+  bandwidth: 3
+  kernel: bartlett
+  cluster_entity: false
+  cluster_time: false
+output:
+  output_dir: outputs
+  plot_file: panel_regression.png
+  results_file: panel_regression_results.csv
+  dpi: 300
