@@ -6,6 +6,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -120,7 +126,7 @@ def fit_panel_model(
     
     # Driscoll-Kraay standard errors
     if model_config.get("driscoll_kraay", True):
-        print("Fitting panel model with Driscoll-Kraay standard errors...")
+        logger.error("Fitting panel model with Driscoll-Kraay standard errors...")
         dk_model = PanelOLS(
             y,
             X,
@@ -136,11 +142,11 @@ def fit_panel_model(
             "std_errors": dk_model.std_errors.values,
             "params": dk_model.params.values,
         }
-        print(f"Driscoll-Kraay SEs: {results['driscoll_kraay']['std_errors']}")
+        logger.error(f"Driscoll-Kraay SEs: {results['driscoll_kraay']['std_errors']}")
     
     # Clustered standard errors
     if model_config.get("clustered", True):
-        print("\nFitting panel model with clustered standard errors...")
+        logger.error("\nFitting panel model with clustered standard errors...")
         cluster_model = PanelOLS(
             y,
             X,
@@ -156,11 +162,11 @@ def fit_panel_model(
             "std_errors": cluster_model.std_errors.values,
             "params": cluster_model.params.values,
         }
-        print(f"Clustered SEs: {results['clustered']['std_errors']}")
+        logger.error(f"Clustered SEs: {results['clustered']['std_errors']}")
     
     # Robust standard errors
     if model_config.get("robust", False):
-        print("\nFitting panel model with robust standard errors...")
+        logger.error("\nFitting panel model with robust standard errors...")
         robust_model = PanelOLS(
             y,
             X,
@@ -172,7 +178,7 @@ def fit_panel_model(
             "std_errors": robust_model.std_errors.values,
             "params": robust_model.params.values,
         }
-        print(f"Robust SEs: {results['robust']['std_errors']}")
+        logger.error(f"Robust SEs: {results['robust']['std_errors']}")
     
     return results
 
@@ -289,8 +295,8 @@ def create_panel_visualization(
 def main():
     """Main execution function."""
     if not LINEARMODELS_AVAILABLE:
-        print("ERROR: linearmodels is not installed.")
-        print("Install with: pip install linearmodels")
+        logger.error("ERROR: linearmodels is not installed.")
+        logger.info("Install with: pip install linearmodels")
         sys.exit(1)
     
     script_dir = Path(__file__).parent
@@ -298,7 +304,7 @@ def main():
     output_dir = ensure_output_dir(get_output_dir(config, script_dir))
     
     # Load panel data
-    print("Loading panel data...")
+    logger.info("Loading panel data...")
     data = load_panel_data(config)
     
     data_config = config["data"]
@@ -307,9 +313,9 @@ def main():
     dependent_var = data_config.get("dependent_variable", "value")
     independent_vars = model_config.get("independent_vars", ["days"])
     
-    print(f"\nPanel data shape: {data.shape}")
-    print(f"Number of entities: {data.index.get_level_values(0).nunique()}")
-    print(f"Date range: {data.index.get_level_values(1).min()} to {data.index.get_level_values(1).max()}")
+    logger.info(f"\nPanel data shape: {data.shape}")
+    logger.info(f"Number of entities: {data.index.get_level_values(0).nunique()}")
+    logger.info(f"Date range: {data.index.get_level_values(1).min()} to {data.index.get_level_values(1).max()}")
     
     # Fit panel models
     results = fit_panel_model(
@@ -320,21 +326,21 @@ def main():
     )
     
     # Print model summaries
-    print("\n" + "=" * 70)
-    print("MODEL SUMMARIES")
-    print("=" * 70)
+    logger.info("\n" + "=" * 70)
+    logger.info("MODEL SUMMARIES")
+    logger.info("=" * 70)
     
     for se_type, result in results.items():
-        print(f"\n{se_type.upper().replace('_', ' ')} Model:")
-        print(result["model"].summary)
+        logger.info(f"\n{se_type.upper().replace('_', ' ')} Model:")
+        logger.info(result["model"].summary)
     
     # Create visualization
-    print("\nCreating visualization...")
+    logger.info("\nCreating visualization...")
     fig = create_panel_visualization(data, dependent_var, results, config)
     
     plot_path = output_dir / config["output"].get("plot_file", "panel_regression.png")
     save_plot(fig, plot_path, dpi=config["output"].get("dpi", 300))
-    print(f"Plot saved to: {plot_path}")
+    logger.info(f"Plot saved to: {plot_path}")
     
     # Save results
     results_df = pd.DataFrame({
@@ -347,9 +353,9 @@ def main():
     
     csv_path = output_dir / config["output"].get("results_file", "panel_regression_results.csv")
     results_df.to_csv(csv_path, index=False, encoding="utf-8")
-    print(f"Results saved to: {csv_path}")
+    logger.info(f"Results saved to: {csv_path}")
     
-    print("\n Panel regression analysis complete")
+    logger.info("\n Panel regression analysis complete")
 
 
 if __name__ == "__main__":
