@@ -124,7 +124,7 @@ def fit_panel_model(
     
     # Driscoll-Kraay standard errors
     if model_config.get("driscoll_kraay", True):
-        logger.error("Fitting panel model with Driscoll-Kraay standard errors...")
+        logger.error("Fitting panel model with Driscoll-Kraay standard errors...", exc_info=True)
         dk_model = PanelOLS(
             y,
             X,
@@ -140,11 +140,11 @@ def fit_panel_model(
             "std_errors": dk_model.std_errors.values,
             "params": dk_model.params.values,
         }
-        logger.error(f"Driscoll-Kraay SEs: {results['driscoll_kraay']['std_errors']}")
+        logger.error(f"Driscoll-Kraay SEs: {results['driscoll_kraay']['std_errors']}", exc_info=True)
     
     # Clustered standard errors
     if model_config.get("clustered", True):
-        logger.error("\nFitting panel model with clustered standard errors...")
+        logger.error("\nFitting panel model with clustered standard errors...", exc_info=True)
         cluster_model = PanelOLS(
             y,
             X,
@@ -160,11 +160,11 @@ def fit_panel_model(
             "std_errors": cluster_model.std_errors.values,
             "params": cluster_model.params.values,
         }
-        logger.error(f"Clustered SEs: {results['clustered']['std_errors']}")
+        logger.error(f"Clustered SEs: {results['clustered']['std_errors']}", exc_info=True)
     
     # Robust standard errors
     if model_config.get("robust", False):
-        logger.error("\nFitting panel model with robust standard errors...")
+        logger.error("\nFitting panel model with robust standard errors...", exc_info=True)
         robust_model = PanelOLS(
             y,
             X,
@@ -176,7 +176,7 @@ def fit_panel_model(
             "std_errors": robust_model.std_errors.values,
             "params": robust_model.params.values,
         }
-        logger.error(f"Robust SEs: {results['robust']['std_errors']}")
+        logger.error(f"Robust SEs: {results['robust']['std_errors']}", exc_info=True)
     
     return results
 
@@ -293,7 +293,7 @@ def create_panel_visualization(
 def main():
     """Main execution function."""
     if not LINEARMODELS_AVAILABLE:
-        logger.error("ERROR: linearmodels is not installed.")
+        logger.error("ERROR: linearmodels is not installed.", exc_info=True)
         logger.info("Install with: pip install linearmodels")
         sys.exit(1)
     
