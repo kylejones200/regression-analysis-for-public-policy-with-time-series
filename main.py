@@ -326,9 +326,7 @@ def main():
     )
     
     # Print model summaries
-    logger.info("\n" + "=" * 70)
-    logger.info("MODEL SUMMARIES")
-    logger.info("=" * 70)
+    logger.info("=== MODEL SUMMARIES ===")
     
     for se_type, result in results.items():
         logger.info(f"\n{se_type.upper().replace('_', ' ')} Model:")
