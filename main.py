@@ -38,7 +38,6 @@ from src import (
     save_plot,
 )
 
-warnings.filterwarnings("ignore")
 
 
 def load_panel_data(config: dict) -> pd.DataFrame:
