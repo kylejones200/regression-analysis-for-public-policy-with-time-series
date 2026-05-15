@@ -28,7 +28,6 @@ except ImportError:
     warnings.warn("linearmodels not available. Install with: pip install linearmodels")
 
 import statsmodels.api as sm
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Import consolidated utilities
 from src import (
