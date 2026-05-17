@@ -1,5 +1,5 @@
 data:
-  input_file: /Users/kylejonespatricia/time_series/data/_harness_adapted/PanelRegression_Python_us_monthly.csv
+  input_file: data/PanelRegression_Python_us_monthly.csv
   entity_column: API_WELLNO
   date_column: ReportDate
   dependent_variable: Oil
