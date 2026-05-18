@@ -5,19 +5,26 @@ from __future__ import annotations
 
 import logging
 import sys
-from pathlib import Path
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-# Add src to path
-
 import warnings
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
+
+from src import (
+    ensure_output_dir,
+    get_output_dir,
+    load_config,
+    save_plot,
+)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+# Add src to path
+
+
 
 # Try to import linearmodels
 try:
@@ -28,21 +35,13 @@ except ImportError:
     LINEARMODELS_AVAILABLE = False
     warnings.warn("linearmodels not available. Install with: pip install linearmodels")
 
-import statsmodels.api as sm
 
 # Import consolidated utilities
-from src import (
-    ensure_output_dir,
-    get_output_dir,
-    load_config,
-    save_plot,
-)
 
 
 def load_panel_data(config: dict) -> pd.DataFrame:
     """
     Load panel data (multi-index: entity, date).
-
     Parameters:
     -----------
     config : dict
@@ -56,22 +55,17 @@ def load_panel_data(config: dict) -> pd.DataFrame:
     data_config = config["data"]
     repo_root = Path(__file__).parent.parent
     data_path = repo_root / data_config["input_file"]
-
     if not data_path.exists():
         raise FileNotFoundError(f"Data file not found: {data_path}")
 
     df = pd.read_csv(data_path, encoding="utf-8")
-
     # Parse date column
     date_col = data_config.get("date_column", "date")
     entity_col = data_config.get("entity_column", "entity_id")
-
     df[date_col] = pd.to_datetime(df[date_col])
-
     # Set multi-index
     df = df.set_index([entity_col, date_col])
     df = df.sort_index()
-
     return df
 
 
@@ -83,7 +77,6 @@ def fit_panel_model(
 ) -> dict:
     """
     Fit panel regression models with different standard error types.
-
     Parameters:
     -----------
     data : pd.DataFrame
@@ -104,28 +97,21 @@ def fit_panel_model(
         raise ImportError("linearmodels is required for panel regression")
 
     model_config = config.get("model", {})
-
     # Prepare data
     y = data[dependent_var]
     X = data[independent_vars]
     X = sm.add_constant(X)  # Add intercept
-
     # Drop missing values
     valid_idx = ~(y.isna() | X.isna().any(axis=1))
     y = y[valid_idx]
     X = X[valid_idx]
-
     # Entity and time effects
     entity_effects = model_config.get("entity_effects", True)
     time_effects = model_config.get("time_effects", False)
-
     results = {}
-
     # Driscoll-Kraay standard errors
     if model_config.get("driscoll_kraay", True):
-        logger.error(
-            "Fitting panel model with Driscoll-Kraay standard errors...", exc_info=True
-        )
+        logger.error("Fitting panel model with Driscoll-Kraay standard errors...", exc_info=True)
         dk_model = PanelOLS(
             y,
             X,
@@ -148,9 +134,7 @@ def fit_panel_model(
 
     # Clustered standard errors
     if model_config.get("clustered", True):
-        logger.error(
-            "\nFitting panel model with clustered standard errors...", exc_info=True
-        )
+        logger.error("\nFitting panel model with clustered standard errors...", exc_info=True)
         cluster_model = PanelOLS(
             y,
             X,
@@ -166,15 +150,11 @@ def fit_panel_model(
             "std_errors": cluster_model.std_errors.values,
             "params": cluster_model.params.values,
         }
-        logger.error(
-            f"Clustered SEs: {results['clustered']['std_errors']}", exc_info=True
-        )
+        logger.error(f"Clustered SEs: {results['clustered']['std_errors']}", exc_info=True)
 
     # Robust standard errors
     if model_config.get("robust", False):
-        logger.error(
-            "\nFitting panel model with robust standard errors...", exc_info=True
-        )
+        logger.error("\nFitting panel model with robust standard errors...", exc_info=True)
         robust_model = PanelOLS(
             y,
             X,
@@ -199,7 +179,6 @@ def create_panel_visualization(
 ) -> plt.Figure:
     """
     Create visualization of panel regression results.
-
     Parameters:
     -----------
     data : pd.DataFrame
@@ -217,11 +196,9 @@ def create_panel_visualization(
         Figure with visualizations
     """
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
     # Plot 1: Sample entities over time
     entity_level = data.index.names[0]
     sample_entities = data.index.get_level_values(entity_level).unique()[:5]
-
     for entity in sample_entities:
         entity_data = data.xs(entity, level=entity_level)
         axes[0, 0].plot(
@@ -239,16 +216,13 @@ def create_panel_visualization(
     axes[0, 0].grid(True, alpha=0.3)
     axes[0, 0].spines["top"].set_visible(False)
     axes[0, 0].spines["right"].set_visible(False)
-
     # Plot 2: Standard error comparison
     if "driscoll_kraay" in results and "clustered" in results:
         dk_se = results["driscoll_kraay"]["std_errors"]
         cluster_se = results["clustered"]["std_errors"]
         labels = ["Intercept"] + config["model"].get("independent_vars", ["var1"])
-
         x_pos = np.arange(len(labels))
         width = 0.35
-
         axes[0, 1].bar(
             x_pos - width / 2,
             dk_se,
@@ -282,7 +256,6 @@ def create_panel_visualization(
     axes[1, 0].spines["top"].set_visible(False)
     axes[1, 0].spines["right"].set_visible(False)
     axes[1, 0].grid(True, alpha=0.3, axis="y")
-
     # Plot 4: Residuals (if available)
     if "driscoll_kraay" in results:
         model = results["driscoll_kraay"]["model"]
@@ -309,24 +282,19 @@ def main():
 
     script_dir = Path(__file__).parent
     config = load_config(script_dir / "config.yaml")
-    output_dir = ensure_output_dir(get_output_dir(config, script_dir))
-
+    output_dir = ensure_output_dir(config)
     # Load panel data
     logger.info("Loading panel data...")
     data = load_panel_data(config)
-
     data_config = config["data"]
     model_config = config.get("model", {})
-
     dependent_var = data_config.get("dependent_variable", "value")
     independent_vars = model_config.get("independent_vars", ["days"])
-
     logger.info(f"\nPanel data shape: {data.shape}")
     logger.info(f"Number of entities: {data.index.get_level_values(0).nunique()}")
     logger.info(
         f"Date range: {data.index.get_level_values(1).min()} to {data.index.get_level_values(1).max()}"
     )
-
     # Fit panel models
     results = fit_panel_model(
         data,
@@ -334,10 +302,8 @@ def main():
         independent_vars=independent_vars,
         config=config,
     )
-
     # Print model summaries
     logger.info("=== MODEL SUMMARIES ===")
-
     for se_type, result in results.items():
         logger.info(f"\n{se_type.upper().replace('_', ' ')} Model:")
         logger.info(result["model"].summary)
@@ -345,28 +311,22 @@ def main():
     # Create visualization
     logger.info("\nCreating visualization...")
     fig = create_panel_visualization(data, dependent_var, results, config)
-
     plot_path = output_dir / config["output"].get("plot_file", "panel_regression.png")
     save_plot(fig, plot_path, dpi=config["output"].get("dpi", 300))
     logger.info(f"Plot saved to: {plot_path}")
-
     # Save results
     results_df = pd.DataFrame(
         {
             "coefficient": ["Intercept"] + independent_vars,
         }
     )
-
     for se_type, result in results.items():
         results_df[f"{se_type}_param"] = result["params"]
         results_df[f"{se_type}_std_error"] = result["std_errors"]
 
-    csv_path = output_dir / config["output"].get(
-        "results_file", "panel_regression_results.csv"
-    )
+    csv_path = output_dir / config["output"].get("results_file", "panel_regression_results.csv")
     results_df.to_csv(csv_path, index=False, encoding="utf-8")
     logger.info(f"Results saved to: {csv_path}")
-
     logger.info("\n Panel regression analysis complete")
 
 
